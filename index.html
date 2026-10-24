@@ -228,22 +228,22 @@ function visOn(){return S.vv!==false}
 function vclipOn(){return S.vclip!==false}
 function vvBtn(cb){var b=el("button",{class:"tool",type:"button","aria-pressed":visOn()});function t(){b.textContent="Campo de visão salvo: "+(visOn()?"ligado":"desligado");b.setAttribute("aria-pressed",String(visOn()))}t();b.onclick=function(){S.vv=!visOn();save();t();cb()};return b}
 function notice(msg){setSt(msg);var o=document.getElementById("notice");if(o)o.remove();o=el("div",{id:"notice",role:"alert"});o.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:min(560px,92vw);z-index:20;background:#7c2d12;color:#fff;padding:12px 16px;border-radius:8px;font:600 14px/1.4 sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.35);cursor:pointer";o.textContent=msg;o.onclick=function(){o.remove()};document.body.appendChild(o);setTimeout(function(){if(o.parentNode)o.remove()},10000)}
-function detour(a,b,W){var R=7,tries=[160,420,1e5],ti;
-  for(ti=0;ti<tries.length;ti++){var mg=tries[ti],x0=Math.min(a[0],b[0])-mg,x1=Math.max(a[0],b[0])+mg,y0=Math.min(a[1],b[1])-mg,y1=Math.max(a[1],b[1])+mg,nodes=[a,b],seen={};
-    W.forEach(function(s){[[s[0],s[1],s[2],s[3]],[s[2],s[3],s[0],s[1]]].forEach(function(e){var vx=e[0],vy=e[1];if(vx<x0||vx>x1||vy<y0||vy>y1)return;var dx=e[2]-vx,dy=e[3]-vy,l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;var nx=-dy,ny=dx;
+function detour(a,b,W,dl){var R=7,tries=[160,420,1e5],ti;dl=dl||Date.now()+500;
+  for(ti=0;ti<tries.length;ti++){var mg=tries[ti],x0=Math.min(a[0],b[0])-mg,x1=Math.max(a[0],b[0])+mg,y0=Math.min(a[1],b[1])-mg,y1=Math.max(a[1],b[1])+mg,nodes=[a,b],seen={},Wl=W.filter(function(s){return Math.max(s[0],s[2])>=x0&&Math.min(s[0],s[2])<=x1&&Math.max(s[1],s[3])>=y0&&Math.min(s[1],s[3])<=y1});
+    Wl.forEach(function(s){[[s[0],s[1],s[2],s[3]],[s[2],s[3],s[0],s[1]]].forEach(function(e){var vx=e[0],vy=e[1];if(vx<x0||vx>x1||vy<y0||vy>y1)return;var dx=e[2]-vx,dy=e[3]-vy,l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;var nx=-dy,ny=dx;
       [[-dx*R+nx*R,-dy*R+ny*R],[-dx*R-nx*R,-dy*R-ny*R]].forEach(function(o){var px=vx+o[0],py=vy+o[1],k=Math.round(px/3)+","+Math.round(py/3);if(seen[k])return;seen[k]=1;nodes.push([px,py])})})});
-    var n=nodes.length,dist=[],prev=[],done=[],i;for(i=0;i<n;i++)dist[i]=Infinity;dist[0]=0;
-    for(;;){var u=-1,bd=Infinity;for(i=0;i<n;i++)if(!done[i]&&dist[i]<bd){bd=dist[i];u=i}if(u<0||u===1)break;done[u]=true;
-      for(i=0;i<n;i++){if(done[i])continue;var nd=dist[u]+Math.hypot(nodes[u][0]-nodes[i][0],nodes[u][1]-nodes[i][1]);if(nd>=dist[i])continue;if(blocked(nodes[u],nodes[i],W))continue;dist[i]=nd;prev[i]=u}}
+    var n=nodes.length,dist=[],prev=[],done=[],i;if(n>600)continue;for(i=0;i<n;i++)dist[i]=Infinity;dist[0]=0;
+    for(;;){if(Date.now()>dl)return null;var u=-1,bd=Infinity;for(i=0;i<n;i++)if(!done[i]&&dist[i]<bd){bd=dist[i];u=i}if(u<0||u===1)break;done[u]=true;
+      for(i=0;i<n;i++){if(done[i])continue;var nd=dist[u]+Math.hypot(nodes[u][0]-nodes[i][0],nodes[u][1]-nodes[i][1]);if(nd>=dist[i])continue;if(blocked(nodes[u],nodes[i],Wl))continue;dist[i]=nd;prev[i]=u}}
     if(dist[1]<Infinity){var pth=[],c=1;while(c!=null){pth.unshift(nodes[c]);c=c===0?null:prev[c]}return pth}}
   return null}
 function fixPath(m,p,f0){var W=[wallSegs(m,0),wallSegs(m,1)];if(!W[0].length&&!W[1].length)return{p:p,n:0,bad:0};
   var f=f0==null?0:f0,z0=zoneAt(m,p[0]);if(z0!=null)f=z0;
-  var out=[p[0]],n=0,bad=0,i;
+  var out=[p[0]],n=0,bad=0,i,dl=Date.now()+700;
   function fseg(b){var zb=zoneAt(m,b);return zb!=null?zb:f}
   for(i=1;i<p.length;i++){var a=out[out.length-1],b=p[i],fs=fseg(b),w=W[fs];
     if(!w.length||!blocked(a,b,w)){out.push(b)}
-    else{var pt=detour(a,b,w);if(pt){for(var k=1;k<pt.length;k++){out.push(pt[k]);var zk=zoneAt(m,pt[k]);if(zk!=null)fs=zk}n++}else{out.push(b);bad++}}
+    else{var pt=Date.now()>dl?null:detour(a,b,w,dl);if(pt){for(var k=1;k<pt.length;k++){out.push(pt[k]);var zk=zoneAt(m,pt[k]);if(zk!=null)fs=zk}n++}else{out.push(b);bad++}}
     f=fs;var zb2=zoneAt(m,b);if(zb2!=null)f=zb2}
   return{p:out,n:n,bad:bad}}
 function warnFix(f){if(f.n>0)notice("Aviso: o desenho passava por parede. Tirei o trecho que atravessava e refiz o caminho mais curto até o mesmo lugar ("+f.n+" ajuste"+(f.n>1?"s":"")+")."+(f.bad?" Em "+f.bad+" ponto(s) não achei caminho livre e deixei como estava.":""));else if(f.bad)notice("Aviso: o desenho passa por parede e não achei caminho livre para refazer. Deixei como estava.")}
@@ -1739,6 +1739,10 @@ function hora(){return new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",min
 try{n=parseInt(localStorage.getItem(k),10)||0}catch(e){}
 if(n<0||n>=TH.length)n=0;
 function ap(){if(n>0)document.documentElement.setAttribute("data-t",n);else document.documentElement.removeAttribute("data-t");b.textContent="Tema de cor: "+TH[n];try{localStorage.setItem(k,n)}catch(e){}}
+b.onclick=function(){n=(n+1)%TH.length;ap()};ap()})();
+</script>
+</body>
+</html>
 b.onclick=function(){n=(n+1)%TH.length;ap()};ap()})();
 </script>
 </body>

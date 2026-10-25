@@ -155,7 +155,7 @@ function migrate(){if(!S.ord){var OR=["dust2","mirage","ancient","inferno","anub
 migrate();
 /* ---------- perfis: estado ---------- */
 var PROF=[{id:"p1",i:0},{id:"p2",i:1},{id:"p3",i:2},{id:"p4",i:3},{id:"p5",i:4},{id:"mx",i:-1}];
-var PK=["defs","calls","fx","tm","ab","ut","dw","ar","igl","note","vzr","co","wl","wu","wm","zn"],CK=["co","wl","wu","wm","zn"],BC={};
+var PK=["defs","calls","fx","fxo","tm","ab","ut","dw","ar","igl","note","vzr","co","wl","wu","wm","zn"],CK=["co","wl","wu","wm","zn"],BC={};
 try{BC=JSON.parse(localStorage.getItem("cs2-bc")||"{}")}catch(e){}
 var BASE=S,PD={},MD={},ACC={},ACP={},FSHA={},CURJ={},DIRTY={},VIEW=null,ME=null,UNL={},CAN=false,CALLOK=false,LOADED=false,ROU=false;
 try{PROF.forEach(function(p){if(p.id==="mx")return;var a=localStorage.getItem("cs2-p-"+p.id),b=localStorage.getItem("cs2-m-"+p.id);if(a)PD[p.id]=JSON.parse(a);if(b)MD[p.id]=JSON.parse(b)});ACC=JSON.parse(localStorage.getItem("cs2-ac")||"{}");ACP=JSON.parse(localStorage.getItem("cs2-acp")||"{}");DIRTY=JSON.parse(localStorage.getItem("cs2-dirty2")||"{}");ROU=localStorage.getItem("cs2-ro")==="1"}catch(e){}
@@ -364,7 +364,14 @@ var ULIFE={smoke:20,molotov:7,decoy:15,flash:1,he:1};
 function ulife(u,e){if(u.t==="molotov"){var k=(e&&e.kind)||(side==="ct"?"incendiary":"molotov");return k==="incendiary"?5.5:7}return ULIFE[u.t]||1}
 function ptE(v){v=String(v==null?"":v).trim();if(!v)return NaN;if(v.indexOf(":")>=0){var c=pc(v);return c>=0&&c<=115?115-c:NaN}var n=+v.replace(",",".");return n>=0?n:NaN}
 function r1(x){return String(Math.round(x*10)/10).replace(".",",")}
-function ltimeG(u,e){if(!e||typeof e!=="object")return null;var th=ptE(e.tm);if(!(th>=0))return null;var ld=ptE(e.ld),la=ld>=0?Math.max(th,ld):th+((u.t==="smoke"||u.t==="decoy")?4.5:1.5);return[th,la,la+ulife(u,e)]}
+function flightOf(u,e){
+  function n(v){v=v==null?"":String(v).trim().replace(",",".");return v!==""&&+v>0?+v:NaN}
+  var a=n(e&&e.ft);if(a>0)return a;
+  var L=ulinks(u)||[],b=L[(e&&e.lk)|0]?n(L[(e&&e.lk)|0].ft):NaN;
+  if(!(b>0))for(var i=0;i<L.length&&!(b>0);i++)b=n(L[i].ft);
+  if(b>0)return b;
+  return(u.t==="smoke"||u.t==="decoy")?4.5:1.5}
+function ltimeG(u,e){if(!e||typeof e!=="object")return null;var th=ptE(e.tm);if(!(th>=0))return null;var ld=ptE(e.ld),la=ld>=0?Math.max(th,ld):th+flightOf(u,e);return[th,la,la+ulife(u,e)]}
 function lstate(a,tt){return!a?1:tt<a[0]?0:tt<a[1]?.4:tt<a[2]?1:0}
 function allU(m){return m.ut[side].u.concat(m.ut[side==="tr"?"ct":"tr"].u)}
 function findU(m,n){n=(n||"").trim().toLowerCase();return allU(m).filter(function(x){return(x.nm||"").trim().toLowerCase()===n})[0]}
@@ -387,10 +394,11 @@ function utilLink(m,d,who){
       if(u.t==="molotov"){var ks=el("select",{class:"sel","aria-label":"Molotov ou incendiária"});ks.disabled=RO;
         [["molotov","Molotov (7 s)"],["incendiary","Incendiária (5,5 s)"]].forEach(function(o){var op=el("option",{value:o[0]});op.textContent=o[1];if(o[0]===(e.kind||(side==="ct"?"incendiary":"molotov")))op.selected=true;ks.appendChild(op)});
         ks.onchange=function(){e.kind=ks.value;save();up();ch()};tr.appendChild(ks)}
+      var lks=ulinks(u);if(lks.length>1){var ls2=el("select",{class:"sel","aria-label":"Lançar de qual lugar"});ls2.disabled=RO;lks.forEach(function(L,li){var op=el("option",{value:li});op.textContent=(L.n||("Link "+(li+1)))+(String(L.ft==null?"":L.ft).trim()?" · cai em "+L.ft+" s":"");if((e.lk|0)===li)op.selected=true;ls2.appendChild(op)});ls2.onchange=function(){e.lk=+ls2.value;save();up();ch()};tr.appendChild(ls2)}
       if(who){var ws=el("select",{class:"sel","aria-label":"Quem lança"});ws.disabled=RO;var o0=el("option",{value:""});o0.textContent="Quem lança?";ws.appendChild(o0);
         [0,1,2,3,4].forEach(function(i){var op=el("option",{value:i});op.textContent=pname(i);if(String(e.th)===String(i))op.selected=true;ws.appendChild(op)});(d.en||[]).forEach(function(en2,i){var op=el("option",{value:"e"+i});op.textContent="Inimigo "+(i+1);if(String(e.th)==="e"+i)op.selected=true;ws.appendChild(op)});
         ws.onchange=function(){e.th=ws.value;save();up();ch()};tr.appendChild(ws)}
-      [["tm","Lançada em (1:50 ou 5)"],["ld","Cai em (1:47 ou 8)"],["sh","Aparece no jogador em (vazio = 1,2 s antes)"]].forEach(function(k){var f=field("input",e[k[0]]||"",k[1],function(v){e[k[0]]=v;up();ch()});f.style.flex="1";tr.appendChild(f)});
+      [["tm","Lançada em (1:50 ou 5)"],["ld","Cai em (1:47 ou 8)"],["ft","Tempo até cair em s (vazio = o do link)"],["sh","Aparece no jogador em (vazio = 1,2 s antes)"]].forEach(function(k){var f=field("input",e[k[0]]||"",k[1],function(v){e[k[0]]=v;up();ch()});f.style.flex="1";tr.appendChild(f)});
       up();c.appendChild(tr);c.appendChild(inf)}
     l.appendChild(c)})}
   var ab=el("button",{class:"b"});ab.textContent="Colocar utilitária";ab.onclick=function(){var v=ia.value.trim();if(!v)return;d.ul.push({n:v,tm:""});ia.value="";save();draw();ch()};
@@ -699,14 +707,17 @@ function visaoView(m){m.vzr=m.vzr||[];m.zn=m.zn||[];collectRefs(m);
     grp(tb,"Parede:",[[0,"Inferior"],[1,"Superior"],[2,"Mista"]],function(){return FLOOR},function(v){FLOOR=v});tb.appendChild(wallBtn());
     var zb=el("button",{class:"tool",type:"button","aria-pressed":S.zv!==false});zb.textContent="Zonas visíveis";zb.onclick=function(){S.zv=S.zv===false;save();bar();paint()};tb.appendChild(zb);
     var cb=el("button",{class:"tool",type:"button","aria-pressed":vclipOn()});cb.textContent="Visão para nas paredes";cb.onclick=function(){S.vclip=!vclipOn();save();bar();paint()};tb.appendChild(cb);
-    [["mouse","Mouse"],["p","Lápis (parede "+FLN[FLOOR].toLowerCase()+")"],["x","Apagar parede"],["z","Zona (desenhar)"],["zx","Apagar zona (clique dentro)"]].forEach(function(k){var b=el("button",{class:"tool",type:"button","aria-pressed":tool===k[0]});b.textContent=k[1];b.onclick=function(){tool=k[0];bar()};ed.appendChild(b)});
+    [["mouse","Mouse"],["p","Lápis (parede "+FLN[FLOOR].toLowerCase()+")"],["x","Apagar parede"],["b","Lata de tinta (parede "+FLN[FLOOR].toLowerCase()+")"],["z","Zona (desenhar)"],["zx","Apagar zona (clique dentro)"]].forEach(function(k){var b=el("button",{class:"tool",type:"button","aria-pressed":tool===k[0]});b.textContent=k[1];b.onclick=function(){tool=k[0];bar()};ed.appendChild(b)});
     grp(ed,"Zona nova é:",[[0,"Inferior"],[1,"Superior"]],function(){return ZF},function(v){ZF=v});
+    var tl=el("label",{class:"sl"}),ti=el("input",{type:"range",min:5,max:120,"aria-label":"Cor parecida"}),tv=el("span");ti.value=TOL;tv.textContent=TOL;ti.oninput=function(){TOL=+ti.value;tv.textContent=TOL};tl.appendChild(document.createTextNode("Cor parecida (lata) "));tl.appendChild(ti);tl.appendChild(tv);ed.appendChild(tl);
+    var ub2=el("button",{class:"b",type:"button"});ub2.textContent="Desfazer lata de tinta";ub2.onclick=function(){if(LASTB&&LASTB.m===m){LASTB.arr.splice(LASTB.arr.length-LASTB.n,LASTB.n);LASTB=null;save();paint();setSt("Lata de tinta desfeita.")}else setSt("Nada para desfazer da lata.")};ed.appendChild(ub2);
     var u=el("button",{class:"b",type:"button"});u.textContent="Desfazer última parede";u.onclick=function(){wlOf(m,FLOOR).pop();save();paint()};ed.appendChild(u);
     var c=el("button",{class:"b danger",type:"button"});c.textContent="Limpar paredes ("+FLN[FLOOR].toLowerCase()+")";c.onclick=function(){if(!wlOf(m,FLOOR).length)return;ask("Apagar TODAS as paredes "+FLN[FLOOR].toLowerCase()+"s de "+(m.name||"este mapa")+"?",function(){if(FLOOR===2)m.wm=[];else if(FLOOR)m.wu=[];else m.wl=[];save();paint()})};ed.appendChild(c);
     var cz=el("button",{class:"b danger",type:"button"});cz.textContent="Limpar zonas";cz.onclick=function(){if(!m.zn.length)return;ask("Apagar TODAS as zonas de "+(m.name||"este mapa")+"?",function(){m.zn=[];save();paint()})};ed.appendChild(cz)}
   svg.onpointerdown=function(e){if(RO||LOCK)return;var p=ptr(svg,e);
     if(tool==="x"){var i=nearWall(m,p,FLOOR);if(i>=0){wlOf(m,FLOOR).splice(i,1);save();paint()}return}
     if(tool==="zx"){for(var k=m.zn.length-1;k>=0;k--)if(inPoly(p,m.zn[k].p)){m.zn.splice(k,1);save();paint();break}return}
+    if(tool==="b"){paintBucket(m,p,FLOOR,TOL,function(){save();paint()});return}
     if(tool==="p"||tool==="z"){cur=[p];curF=FLOOR;dr=true;svg.setPointerCapture(e.pointerId)}};
   svg.onpointermove=function(e){if(!dr)return;var p=ptr(svg,e),l=cur[cur.length-1];if(Math.hypot(p[0]-l[0],p[1]-l[1])>6){cur.push(p);paint()}};
   svg.onpointerup=svg.onpointercancel=function(){if(!dr)return;dr=false;if(cur&&cur.length>=2){if(tool==="z"){if(cur.length>=4)m.zn.push({f:ZF,p:cur})}else wlOf(m,curF).push(cur);save()}cur=null;paint()};
@@ -936,7 +947,7 @@ function timingView(m,OPT){
   P.extra=function(){if(RO)return"";var o="";
     if(OPT&&OPT.bs)(OPT.bs.T.r||[]).forEach(function(r){if((r.n||1)<=OPT.bs.n&&r.p.length>1)o+='<polyline points="'+r.p.map(function(a){return a.join(",")}).join(" ")+'" fill="none" stroke="'+COLORS[r.sp%5]+'" stroke-width="3" stroke-dasharray="3 6" stroke-linecap="round" opacity=".45" pointer-events="none"/>'});
     if(tool!=="route"||(tpart<2&&!OPT))return o;T.sp.forEach(function(s,i){var e2=prevEnd2(i,tpart);if(e2)o+='<circle cx="'+e2[0]+'" cy="'+e2[1]+'" r="17" fill="none" stroke="'+COLORS[i%5]+'" stroke-width="4" stroke-dasharray="7 6"/>'});return o};
-  drawBar();lists();P.paint();w.appendChild(hint);if(!OPT){var vh=el("p",{class:"hint"}),vn=[];T.r.forEach(function(r){if(r.vs){var s=T.sp[r.sp];vn.push(((s&&s.n)?s.n:"Respawn "+(r.sp+1))+" · "+(r.nm||"rota")+" P"+(r.n||1))}});vh.textContent=vn.length?"Visão salva nas rotas: "+vn.join(", ")+" (criada em Callouts, Visão automática). Aparece no replay só dessas rotas, aqui e nas Defaults, Calls e Rounds (botão Campo de visão). Para mudar, volte lá.":"Nenhuma rota com visão ainda. Crie em Callouts, Visão automática, e ela aparece aqui no replay.";w.appendChild(vh)}w.appendChild(bar);w.appendChild(sub);w.appendChild(P.wrap);w.appendChild(P.scr);
+  drawBar();lists();P.paint();w.appendChild(hint);if(!OPT){var vh=el("p",{class:"hint"}),vn=[];T.r.forEach(function(r){if(r.vs){var s=T.sp[r.sp];vn.push(((s&&s.n)?s.n:"Respawn "+(r.sp+1))+" · "+(r.nm||"rota")+" P"+(r.n||1))}});vh.textContent=vn.length?"Visão salva nas rotas: "+vn.join(", ")+" (criada em Callouts, Visão automática). Aparece no replay só dessas rotas, aqui e nas Defaults, Calls e Rounds (botão Campo de visão). Para mudar, volte lá.":"Nenhuma rota com visão ainda. Crie em Callouts, Visão automática, e ela aparece aqui no replay.";w.appendChild(vh)}w.appendChild(bar);w.appendChild(launchBtn());w.appendChild(sub);w.appendChild(P.wrap);w.appendChild(P.scr);
   var hp=el("h2");hp.textContent="Partes";var hpw=el("div",{class:"edt"});hpw.appendChild(hp);var hph=el("p",{class:"hint"});hph.textContent="Cada parte termina no relógio (ex: 1:30) ou numa duração em segundos (ex: 20). Quem terminar a rota antes fica parado até a parte acabar; quem não terminar é cortado e a próxima parte começa. Para desenhar em outra parte, escolha 'Parte N' na barra acima do mapa.";hpw.appendChild(hph);hpw.appendChild(ptl);w.appendChild(hpw);
   var h1=el("h2");h1.textContent="Respawns";var h2=el("h2");h2.textContent="Timings";
   var h1w=el("div",{class:"edt"});h1w.appendChild(h1);h1w.appendChild(sl);if(!OPT){w.appendChild(h1w);if(!RO||true)w.appendChild(tchoiceEd(m,T))}w.appendChild(h2);w.appendChild(rl);
@@ -1223,6 +1234,7 @@ function minimap(m,d,U){
       c.appendChild(field("textarea",u.tx||"","Onde é essa utilitária e como lançar",function(v){u.tx=v}));
       var ls=ulinks(u),lh=el("p",{class:"hint"}),lb=el("div");lh.textContent="Links: um para cada lugar de onde dá para lançar. Escreva o nome do lugar e depois o link. Use + para outro lugar e − para tirar.";c.appendChild(lh);
       function drawL(){lb.innerHTML="";ls.forEach(function(L,li){var r=el("div",{class:"row"}),nn=field("input",L.n||"","Nome do lugar (ex: pé do pilar)",function(v){L.n=v}),uu=field("input",L.u||"","Link do vídeo (YouTube ou outro)",function(v){L.u=v});nn.style.flex="1";uu.style.flex="2";r.appendChild(nn);r.appendChild(uu);
+        var tf=field("input",L.ft==null?"":L.ft,"Cai em (s)",function(v){L.ft=v});tf.style.maxWidth="110px";tf.title="Segundos que a utilitária leva para cair depois de lançada deste lugar";r.appendChild(tf);
         var lbw=linkBtn(function(){return L.u},{label:L.n||("Link "+(li+1)),title:function(){return L.n||"Link"}});nn.addEventListener("input",function(){lbw.firstChild.textContent=nn.value||("Link "+(li+1))});r.appendChild(lbw);
         var mb=el("button",{class:"b danger edt",type:"button","aria-label":"Tirar este link"});mb.textContent="−";mb.onclick=function(){ls.splice(li,1);save();drawL()};r.appendChild(mb);lb.appendChild(r)})}
       drawL();c.appendChild(lb);var pb=el("button",{class:"b edt",type:"button","aria-label":"Adicionar outro link"});pb.textContent="+ link";pb.onclick=function(){ls.push({n:"",u:""});save();drawL()};
@@ -1476,7 +1488,7 @@ function render0(){
   ["ct","tr"].forEach(function(k){var b=el("button",{class:"side","aria-pressed":k===side});b.style.setProperty("--c",SIDECOL[k]);b.innerHTML=ICON[k]+"<span>"+SIDENAME[k]+"</span>";b.onclick=function(){side=k;render()};sp.appendChild(b)});
   if(sec!=="callouts")box.appendChild(sp);
   ensure(m);
-  if(sec==="fixo")box.appendChild(fxBar());
+  if(sec==="fixo"){box.appendChild(fxTabs(m));box.appendChild(fxBar())}
   if(sec==="draw"){box.appendChild(drawView(m));return}
   if(sec==="timing"){box.appendChild(timingView(m));return}
   if(sec==="callouts"){box.appendChild(calloutView(m));return}
@@ -1655,6 +1667,64 @@ function launchCallouts(){
   S.maps.forEach(function(m){var bm=m.__b;if(bm)CK.forEach(function(k){if(m[k]!==undefined)bm[k]=cpy(m[k])})});
   mark("dados.json",JSON.stringify(BASE),KEY);try{localStorage.setItem("cs2-bc",JSON.stringify(BC))}catch(e){}persistDirty();
   setSt("Callouts do Player 1 copiados para "+n+" jogadores neste aparelho. Use Publicar para gravar no GitHub (escreve só os arquivos dos jogadores 2 a 5 e o modelo).")}
+function launchTimings(){
+  if(!(VIEW==="p1"&&UNL.p1&&CAN)){notice("Só o Player 1, com o perfil destravado, pode lançar.");return}
+  if(!(LOADED&&(NETOK||!isEd()))){notice("Ainda não li os arquivos dos outros jogadores no GitHub. Use Atualizar do GitHub e tente de novo, para não apagar o que eles já têm.");return}
+  flushNow();var n=0;["p2","p3","p4","p5"].forEach(function(id){var pd=PD[id]=PD[id]||{maps:{}};pd.maps=pd.maps||{};
+    S.maps.forEach(function(m){var cur=pd.maps[m.uid];if(!cur)cur=cpy(pkOf(m.__b||{}));if(m.tm!==undefined)cur.tm=cpy(m.tm);pd.maps[m.uid]=cur});
+    var s=JSON.stringify(pd),p="perfis/"+id+".json";CURJ[p]=s;DIRTY[p]=1;BC[id]=1;try{localStorage.setItem("cs2-p-"+id,s)}catch(e){}n++});
+  try{localStorage.setItem("cs2-bc",JSON.stringify(BC))}catch(e){}persistDirty();
+  setSt("Timings do Player 1 copiados para "+n+" jogadores neste aparelho. Use Publicar para gravar no GitHub (escreve só os arquivos dos jogadores 2 a 5).")}
+function launchBtn(){var sp=el("span");if(VIEW==="p1"&&UNL.p1&&CAN){var ln=el("button",{class:"b primary edt",type:"button"});ln.textContent="📤 Lançar meus Timings para os Players 2 a 5";
+  ln.onclick=function(){ask("Isto copia TODOS os timings do Player 1 (respawns, rotas e tempos, dos dois lados, de todos os mapas) para os Players 2, 3, 4 e 5, substituindo os timings deles. Os outros dados deles não mudam. Continuar?",launchTimings)};sp.appendChild(ln)}return sp}
+var TOL=28,LASTB=null;
+function rdp(P,e){if(P.length<3)return P;var a=P[0],b=P[P.length-1],dm=0,ix=0;for(var i=1;i<P.length-1;i++){var d=dSeg(P[i],a,b);if(d>dm){dm=d;ix=i}}
+  if(dm>e){var l=rdp(P.slice(0,ix+1),e),r=rdp(P.slice(ix),e);return l.slice(0,-1).concat(r)}return[a,b]}
+function maskLoops(M,N){
+  var W1=N+1,outs={};
+  function add(x1,y1,x2,y2){var v=y1*W1+x1;(outs[v]=outs[v]||[]).push(y2*W1+x2)}
+  for(var y=0;y<N;y++)for(var x=0;x<N;x++){if(!M[y*N+x])continue;
+    if(y===0||!M[(y-1)*N+x])add(x,y,x+1,y);
+    if(x===N-1||!M[y*N+x+1])add(x+1,y,x+1,y+1);
+    if(y===N-1||!M[(y+1)*N+x])add(x+1,y+1,x,y+1);
+    if(x===0||!M[y*N+x-1])add(x,y+1,x,y)}
+  var loops=[],ks=Object.keys(outs);
+  for(var i=0;i<ks.length;i++){var v=+ks[i];while(outs[v]&&outs[v].length){var P=[v],cur=v;
+    while(outs[cur]&&outs[cur].length){var nx=outs[cur].pop();P.push(nx);cur=nx}
+    loops.push(P.map(function(q){return[q%W1,Math.floor(q/W1)]}))}}
+  return loops}
+function fillMask(D,N,sx,sy,tol){
+  var i0=(sy*N+sx)*4,r0=D[i0],g0=D[i0+1],b0=D[i0+2],T2=tol*tol,M=new Uint8Array(N*N),st=[sy*N+sx],cnt=0;M[st[0]]=1;
+  while(st.length){var k=st.pop();cnt++;var kx=k%N,ky=(k-kx)/N;
+    for(var q=0;q<4;q++){var nx=kx+(q===0?1:q===1?-1:0),ny=ky+(q===2?1:q===3?-1:0);if(nx<0||ny<0||nx>=N||ny>=N)continue;var nk=ny*N+nx;if(M[nk])continue;
+      var j=nk*4,a=D[j]-r0,b=D[j+1]-g0,c=D[j+2]-b0;if(a*a+b*b+c*c>T2)continue;M[nk]=1;st.push(nk)}}
+  return{M:M,cnt:cnt}}
+function paintBucket(m,p,f,tol,done){
+  if(!m.radar){setSt("Envie a imagem do radar antes de usar a lata de tinta.");return}
+  var im=new Image();im.onerror=function(){setSt("Não consegui abrir a imagem do radar.")};
+  im.onload=function(){
+    var N=384,c=document.createElement("canvas");c.width=c.height=N;var x=c.getContext("2d",{willReadFrequently:true});x.drawImage(im,0,0,N,N);
+    var D;try{D=x.getImageData(0,0,N,N).data}catch(e){setSt("Não consegui ler os pixels da imagem do radar.");return}
+    var sx=Math.max(0,Math.min(N-1,Math.floor(p[0]/1000*N))),sy=Math.max(0,Math.min(N-1,Math.floor(p[1]/1000*N)));
+    var fm=fillMask(D,N,sx,sy,tol),loops=maskLoops(fm.M,N),sc=1000/N,out=[],tot=0;
+    loops.forEach(function(L){if(L.length<14)return;var q=rdp(L,1.5);if(q.length<3)return;out.push(q.map(function(a){return[Math.round(a[0]*sc),Math.round(a[1]*sc)]}));tot+=q.length-1});
+    if(!out.length){setSt("A lata não achou borda neste ponto. Tente outra cor parecida.");return}
+    if(tot>4000){setSt("A lata criaria "+tot+" trechos de parede, é demais e deixaria o simulador lento. Diminua a cor parecida ou clique numa área menor.");return}
+    var arr=wlOf(m,f);out.forEach(function(q){arr.push(q)});LASTB={m:m,arr:arr,n:out.length};
+    setSt("Lata de tinta: "+out.length+" paredes criadas ("+tot+" trechos). Use Desfazer lata de tinta se não gostou.");if(done)done()};
+  im.src=m.radar}
+function fxSets(m){m.fxo=m.fxo||{};["tr","ct"].forEach(function(sd){if(!m.fxo[sd]||!m.fxo[sd].length)m.fxo[sd]=[{n:"Fixo 1",r:null,a:1}];if(!m.fxo[sd].some(function(x){return x.a}))m.fxo[sd][0].a=1})}
+function fxTabs(m){
+  fxSets(m);var sd=side,L=m.fxo[sd],act=0,d=el("div"),w=el("div",{class:"tb"}),rw=el("div",{class:"row edt"});
+  L.forEach(function(x,i){if(x.a)act=i});
+  L.forEach(function(x,i){var b=el("button",{class:"tool",type:"button","aria-pressed":i===act});b.textContent=x.n||("Fixo "+(i+1));
+    b.onclick=function(){if(i===act)return;L[act].r=m.fx[sd];L[act].a=0;m.fx[sd]=x.r;x.r=null;x.a=1;save();render()};w.appendChild(b)});
+  var nb=el("button",{class:"tool edt",type:"button"});nb.textContent="+ Novo fixo";
+  nb.onclick=function(){L[act].r=m.fx[sd];L[act].a=0;L.push({n:"Fixo "+(L.length+1),r:null,a:1});m.fx[sd]=[1,2,3,4,5].map(function(n){return newDef(n,"Round")});fxp=["G","G","G","G"];save();render()};w.appendChild(nb);
+  var ren=field("input",L[act].n||"","Nome deste fixo (ex: Pistol alternativo)",function(v){L[act].n=v});ren.style.maxWidth="280px";rw.appendChild(ren);
+  if(L.length>1){var dl=el("button",{class:"b danger",type:"button"});dl.textContent="Excluir este fixo";
+    dl.onclick=function(){ask("Excluir este fixo inteiro (os 5 rounds e todas as variações de ganhou/perdeu)? Não dá para desfazer.",function(){L.splice(act,1);var nx=L[Math.min(act,L.length-1)];nx.a=1;m.fx[sd]=nx.r;nx.r=null;save();render()})};rw.appendChild(dl)}
+  d.appendChild(w);d.appendChild(rw);return d}
 function whoText(){if(!VIEW)return"Escolha um perfil na aba <<< (ou na tela de entrada).";var n=pnameP(VIEW);
   if(VIEW==="mx")return"Perfil: Misto · só dá para adicionar itens (de "+(ME?pnameP(ME):"ninguém logado")+"); aparece quem fez cada um.";
   return"Perfil: "+n+" · "+(CAN?"editando":(UNL[VIEW]?"senha ok, mas sem token do GitHub (só visualização)":"só visualização (sem a senha)"))}

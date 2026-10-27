@@ -1493,7 +1493,7 @@ function render0(){
   if(sec==="timing"){box.appendChild(timingView(m));return}
   if(sec==="callouts"){box.appendChild(calloutView(m));return}
   if(sec==="igl"){box.appendChild(iglView(m));return}
-  if(sec==="utils"){box.appendChild(minimap(m,m.ut[side],true));return}
+  if(sec==="utils"){box.appendChild(launchUtilBtn());box.appendChild(minimap(m,m.ut[side],true));return}
   var L=sec==="open"?OPENL:sec==="calls"?{n:"Nome da call",d:"Descrição da call: quando chamar, o que falar, quem decide",p:"O que esse jogador fala ou faz nessa call",r:"Remover call",q:"Remover esta call?",a:"+ Nova call",k:"Call"}:{n:"Nome do default",d:"Descrição do default: o que ele busca, timings, leitura",p:"Pef: movimento e o que faz no default",r:"Remover default",q:"Remover este default?",a:"+ Novo default",k:"Default"};
   var defs=sec==="open"?m.ab[side]:sec==="calls"?m.calls[side]:sec==="fixo"?m.fx[side]:m.defs[side];
   if(sec==="fixo")L={n:"Nome do round",d:"Descrição do round: o que o time faz, compra, ideia",p:"O que esse jogador faz nesse round",r:"",q:"",a:"",k:"Round"};
@@ -1677,6 +1677,16 @@ function launchTimings(){
   setSt("Timings do Player 1 copiados para "+n+" jogadores neste aparelho. Use Publicar para gravar no GitHub (escreve só os arquivos dos jogadores 2 a 5).")}
 function launchBtn(){var sp=el("span");if(VIEW==="p1"&&UNL.p1&&CAN){var ln=el("button",{class:"b primary edt",type:"button"});ln.textContent="📤 Lançar meus Timings para os Players 2 a 5";
   ln.onclick=function(){ask("Isto copia TODOS os timings do Player 1 (respawns, rotas e tempos, dos dois lados, de todos os mapas) para os Players 2, 3, 4 e 5, substituindo os timings deles. Os outros dados deles não mudam. Continuar?",launchTimings)};sp.appendChild(ln)}return sp}
+function launchUtils(){
+  if(!(VIEW==="p1"&&UNL.p1&&CAN)){notice("Só o Player 1, com o perfil destravado, pode lançar.");return}
+  if(!(LOADED&&(NETOK||!isEd()))){notice("Ainda não li os arquivos dos outros jogadores no GitHub. Use Atualizar do GitHub e tente de novo, para não apagar o que eles já têm.");return}
+  flushNow();var n=0;["p2","p3","p4","p5"].forEach(function(id){var pd=PD[id]=PD[id]||{maps:{}};pd.maps=pd.maps||{};
+    S.maps.forEach(function(m){var cur=pd.maps[m.uid];if(!cur)cur=cpy(pkOf(m.__b||{}));if(m.ut!==undefined)cur.ut=cpy(m.ut);pd.maps[m.uid]=cur});
+    var s=JSON.stringify(pd),p="perfis/"+id+".json";CURJ[p]=s;DIRTY[p]=1;BC[id]=1;try{localStorage.setItem("cs2-p-"+id,s)}catch(e){}n++});
+  try{localStorage.setItem("cs2-bc",JSON.stringify(BC))}catch(e){}persistDirty();
+  setSt("Utilitárias do Player 1 copiadas para "+n+" jogadores neste aparelho. Use Publicar para gravar no GitHub (escreve só os arquivos dos jogadores 2 a 5).")}
+function launchUtilBtn(){var sp=el("span");if(VIEW==="p1"&&UNL.p1&&CAN){var ln=el("button",{class:"b primary edt",type:"button"});ln.textContent="📤 Lançar minhas Utilitárias para os Players 2 a 5";
+  ln.onclick=function(){ask("Isto copia TODAS as utilitárias do Player 1 (dos dois lados, de todos os mapas, com posições, links e horários) para os Players 2, 3, 4 e 5, substituindo as utilitárias deles. Os outros dados deles não mudam. Continuar?",launchUtils)};sp.appendChild(ln)}return sp}
 var TOL=28,LASTB=null;
 function rdp(P,e){if(P.length<3)return P;var a=P[0],b=P[P.length-1],dm=0,ix=0;for(var i=1;i<P.length-1;i++){var d=dSeg(P[i],a,b);if(d>dm){dm=d;ix=i}}
   if(dm>e){var l=rdp(P.slice(0,ix+1),e),r=rdp(P.slice(ix),e);return l.slice(0,-1).concat(r)}return[a,b]}

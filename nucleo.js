@@ -50,15 +50,27 @@ function chOpts(d){var o=[["","Desenho principal"]];(d.ch||[]).forEach(function(
 function strokesOf(d,ch){if(ch){var q=ch.split(":"),c=(d.ch||[])[q[0]],x=c&&c.o&&c.o[q[1]];return(x&&x.s)||[]}return d.s||[]}
 /* caminho do jogador c; se sp>=0 anda do respawn até o início (desviando de paredes) */
 function joinFromSp(m,a,pts,T){
+  var d00=Math.hypot(a[0]-pts[0][0],a[1]-pts[0][1]);
+  if((T.sp||[]).every(function(s){return Math.hypot(s.x-pts[0][0],s.y-pts[0][1])>=d00-1e-6}))return fixPath(m,[a,pts[0]],0,null).p.concat(pts.slice(1));
   var nearSp=(T.sp||[]).some(function(s){return Math.hypot(s.x-pts[0][0],s.y-pts[0][1])<90}),rem=[],i;
   rem[pts.length-1]=0;for(i=pts.length-2;i>=0;i--)rem[i]=rem[i+1]+Math.hypot(pts[i+1][0]-pts[i][0],pts[i+1][1]-pts[i][1]);
   var tot=rem[0],cand=[0];
-  if(nearSp){for(i=1;i<pts.length-1;i++){if(tot-rem[i]<=tot*0.4)cand.push(i);else break}}
-  if(cand.length>6){var st=cand.length/6,c2=[];for(var k=0;k<6;k++)c2.push(cand[Math.floor(k*st)]);cand=c2}
-  var best=null;
-  cand.forEach(function(j){var seg=fixPath(m,[a,pts[j]],0,null).p,len=0;for(var q=1;q<seg.length;q++)len+=Math.hypot(seg[q][0]-seg[q-1][0],seg[q][1]-seg[q-1][1]);
+  if(nearSp){for(i=1;i<pts.length-1;i++){if(tot-rem[i]<=tot*0.75)cand.push(i);else break}}
+  if(cand.length>8){var st=cand.length/8,c2=[];for(var k=0;k<8;k++)c2.push(cand[Math.floor(k*st)]);cand=c2}
+  var best=null,t0=Date.now();
+  cand.forEach(function(j){if(best&&Date.now()-t0>1500)return;var seg=fixPath(m,[a,pts[j]],0,null).p,len=0;for(var q=1;q<seg.length;q++)len+=Math.hypot(seg[q][0]-seg[q-1][0],seg[q][1]-seg[q-1][1]);
     var cost=len+rem[j];if(!best||cost<best.cost-1e-6)best={cost:cost,seg:seg,j:j}});
   return best.seg.concat(pts.slice(best.j+1))}
+function realignPlayer(m,d,c,sp){
+  var T=m.tm&&m.tm[side];if(!T||!T.sp||sp<0||!T.sp[sp])return 0;
+  var a=[T.sp[sp].x,T.sp[sp].y],q0=null;
+  (d.s||[]).forEach(function(q){if(q.c!==c||!q.p||q.p.length<2)return;if(!q0||(q.n||1)<(q0.n||1))q0=q});
+  if(!q0)return 0;
+  if(!q0.pb)q0.pb=JSON.parse(JSON.stringify(q0.p));
+  var base=q0.pb;
+  if(Math.hypot(a[0]-base[0][0],a[1]-base[0][1])<=12)q0.p=JSON.parse(JSON.stringify(base));
+  else q0.p=joinFromSp(m,a,base,T);
+  return 1}
 function buildPts(m,d,c,ch,sp){var ss=strokesOf(d,ch).filter(function(q){return q.c===c&&q.p.length>1}).sort(function(a,b){return(a.n||1)-(b.n||1)}),pts=[];
  ss.forEach(function(q){q.p.forEach(function(p,i){var l=pts[pts.length-1];if(l&&i===0&&l[0]===p[0]&&l[1]===p[1])return;pts.push([p[0],p[1]])})});
  if(pts.length<2)return null;var T=m.tm[side];
@@ -2106,7 +2118,7 @@ function render0(){
       if(d.nn){var pd0=field("input","Player "+(pi+1),"",function(){});pd0.disabled=true;pl.appendChild(pd0)}else if(sec==="calls"){pl.appendChild(field("input",callName(p,pi),"Player "+(pi+1),function(v){p.name=v}))}else{var pin=field("input",pname(pi),"Nome do jogador",function(v){S.pn[pi]=v;document.querySelectorAll('input[data-pn="'+pi+'"]').forEach(function(x){if(x!==pin)x.value=v});document.querySelectorAll('.pnl[data-pn="'+pi+'"]').forEach(function(x){x.textContent=v||("Jogador "+(pi+1))})});pin.dataset.pn=pi;pl.appendChild(pin)}
       var T9=m.tm&&m.tm[side],nr=T9&&T9.sp?T9.sp.length:0;
       if(nr){d.rs=d.rs||[];var rcur=d.rs[pi]!=null?d.rs[pi]:(pi<nr?pi:-1);
-        pl.appendChild(pickL("Respawn",[[-1,"Nenhum"]].concat(T9.sp.map(function(s9,k9){return[k9,s9.n||("Respawn "+(k9+1))]})),rcur,function(v){d.rs[pi]=parseInt(v,10);save();render()}))}
+        pl.appendChild(pickL("Respawn",[[-1,"Nenhum"]].concat(T9.sp.map(function(s9,k9){return[k9,s9.n||("Respawn "+(k9+1))]})),rcur,function(v){var nv=parseInt(v,10);d.rs[pi]=nv;realignPlayer(m,d,pi,nv);save();render()}))}
       var arp=pickL("Proteção",[["k","Colete"],["n","Sem proteção"]],(d.arp&&d.arp[pi])||"k",function(v){d.arp=d.arp||[];d.arp[pi]=v;save()});arp.className="sl edt";pl.appendChild(arp);
       if(sec==="defs"||sec==="calls"){var xb=el("button",{class:"b edt",type:"button","aria-label":"Tirar este jogador"});xb.textContent="X";xb.style.float="right";xb.onclick=function(){d.hid=d.hid||[];if(d.hid.indexOf(pi)<0)d.hid.push(pi);save();render()};pl.insertBefore(xb,pl.firstChild)}
       pl.appendChild(field("textarea",p.pef,L.p,function(v){p.pef=v}));if(sec==="open")pl.appendChild(lkEd(d,pi,function(){if(mw)mw.rf()}));

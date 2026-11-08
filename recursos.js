@@ -2,7 +2,7 @@
    Se algo quebrar, é aqui que se mexe. Nada muda para ninguém até a pessoa ligar uma opção (padrão = Clássico). */
 (function(){
 "use strict";
-var D={layout:"classic",dens:"comfy",btn:0,top:0,fold:1,foldInit:"open",acc:0,fsBtn:1,plusSide:"right",plusOpen:0,keys:1,bot:0,read:0,orient:"auto",player:null,barMode:"always",clock:null,c4:1,pen:null,penMode:"temp",penCols:"r,y,g,b,w",penW:6,penDur:5,penShow:1,remember:0,undoTop:null,saveTop:null,a11y:0,help:null,pef:"show",stick:0,side:0,pnSide:"right",pnW:480,reorder:null,flip:0,keep:1};
+var D={layout:"classic",dens:"comfy",btn:0,top:0,fold:1,foldInit:"open",acc:0,fsBtn:1,plusSide:"right",plusOpen:0,keys:1,bot:0,read:0,orient:"auto",player:null,barMode:"always",clock:null,c4:1,pen:null,penMode:"temp",penCols:"r,y,g,b,w",penW:6,penDur:5,penShow:1,remember:0,undoTop:null,saveTop:null,a11y:0,help:null,pef:"show",stick:0,side:0,pnSide:"right",pnW:480,reorder:null,flip:0,keep:1,rz:100};
 var GROUPS=[["Planejar",["defs","fixo","calls","open"]],["Ferramentas",["utils","draw","timing"]],["Revisar",["demo","d2","cmp"]],["Outros",["callouts","igl","treino"]]];
 var MAIN=["defs","timing","d2","callouts"];
 function eff(x,k){return x[k]==null?x.layout==="org":!!x[k]}
@@ -59,21 +59,31 @@ var css=document.createElement("style");css.textContent=
 "body.x-lat #map{column-width:min(92vw,560px);column-gap:20px;column-fill:auto;overflow-x:auto;overflow-y:hidden;padding-bottom:6px}body.x-lat #map>*{max-width:100%}body.x-lat #map .mwrap,body.x-lat #map .xcol{break-inside:avoid;max-width:100%}body.x-lat .def,body.x-lat .uc{break-inside:auto}"+
 ".xlat{position:fixed;top:50%;z-index:9;width:40px;height:64px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:800 22px sans-serif;cursor:pointer;display:none;opacity:.92}body.x-lat .xlat{display:block}#xl1{left:4px}#xl2{right:4px}"+
 "body.x-stick #map .mwrap,body.x-stick #map .xcol{position:sticky;top:60px;z-index:2}"+
-"body.x-side.x-flip #map .def{grid-template-columns:minmax(300px,540px) minmax(0,1fr)}body.x-side.x-flip #map .def>*{grid-column:2}body.x-side.x-flip #map .def>.mm{grid-column:1}"+
-"body.x-side.x-flip #map>.mm{grid-template-columns:minmax(0,1fr) minmax(0,640px)}body.x-side.x-flip #map>.mm>.xcol,body.x-side.x-flip #map>.mm>.mwrap{grid-column:2}body.x-side.x-flip #map>.mm>*:not(.mwrap):not(.xcol){grid-column:1}"+
+"body.x-side.x-flip #map .def{grid-template-columns:minmax(300px,calc(540px*var(--rz,1))) minmax(0,1fr)}body.x-side.x-flip #map .def>*{grid-column:2}body.x-side.x-flip #map .def>.mm{grid-column:1}"+
+"body.x-side.x-flip #map>.mm{grid-template-columns:minmax(0,1fr) minmax(0,calc(640px*var(--rz,1)))}body.x-side.x-flip #map>.mm>.xcol,body.x-side.x-flip #map>.mm>.mwrap{grid-column:2}body.x-side.x-flip #map>.mm>*:not(.mwrap):not(.xcol){grid-column:1}"+
 
-"body.x-side #map .def{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,540px);gap:0 16px;align-items:start}body.x-side #map .def>*{grid-column:1}body.x-side #map .def>.mm{grid-column:2;grid-row:1/span 30;position:sticky;top:60px}"+
-"body.x-side #map>.mm{display:grid;grid-template-columns:minmax(0,640px) minmax(0,1fr);gap:12px;align-items:start}body.x-side #map>.mm>.xcol,body.x-side #map>.mm>.mwrap{grid-column:1;grid-row:1/span 40;position:sticky;top:60px}body.x-side #map>.mm>*:not(.mwrap):not(.xcol){grid-column:2}"+
+"body.x-side #map .def{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,calc(540px*var(--rz,1)));gap:0 16px;align-items:start}body.x-side #map .def>*{grid-column:1}body.x-side #map .def>.mm{grid-column:2;grid-row:1/span 30;position:sticky;top:60px}"+
+"body.x-side #map>.mm{display:grid;grid-template-columns:minmax(0,calc(640px*var(--rz,1))) minmax(0,1fr);gap:12px;align-items:start}body.x-side #map>.mm>.xcol,body.x-side #map>.mm>.mwrap{grid-column:1;grid-row:1/span 40;position:sticky;top:60px}body.x-side #map>.mm>*:not(.mwrap):not(.xcol){grid-column:2}"+
 "body.x-land .mm>.xcol{grid-column:1;grid-row:1/span 40;position:sticky;top:60px}.xcol{max-width:640px}"+
 /* abas embaixo: − aba + */
-"body.x-bot #secs .tab{display:none}body.x-bot #secs.xmore .tab{display:block;order:0;flex:1 1 45%}.xnav{order:9;flex:1 1 100%;display:flex;gap:8px;align-items:stretch}.xnav button{min-height:46px;font-size:17px}.xnav .xc{flex:1;font-weight:800;background:var(--acc);color:var(--on);border-color:var(--acc)}.xnav .xs{width:56px;font-size:24px;line-height:1}";
+"body.x-bot #secs .tab{display:none}body.x-bot #secs.xmore .tab{display:block;order:0;flex:1 1 45%}.xnav{order:9;flex:1 1 100%;display:flex;gap:8px;align-items:stretch}.xnav button{min-height:46px;font-size:17px}.xnav .xc{flex:1;font-weight:800;background:var(--acc);color:var(--on);border-color:var(--acc)}.xnav .xs{width:56px;font-size:24px;line-height:1}"+
+/* tamanho do radar (− e +) */
+".xzb{position:absolute;top:8px;left:8px;z-index:3;display:flex;align-items:center;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px;opacity:.92}"+
+".xzb button{width:34px;height:34px;border:0;border-radius:6px;background:transparent;color:var(--ink);font:800 20px/1 sans-serif;cursor:pointer;padding:0}.xzb button:disabled{opacity:.35;cursor:default}"+
+".xzb span{min-width:42px;text-align:center;font:700 12px sans-serif;color:var(--mute)}.xfs .xzb{display:none}"+
+"body.x-rz:not(.xfs-on) svg.map,body.x-rz:not(.xfs-on) .mwrap,body.x-rz:not(.xfs-on) .xcol{max-width:calc(640px*var(--rz,1))!important}"+
+/* radar principal de uma opção (centro e maior) */
+".xfoc{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:10px}"+
+".xfoci{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:0 14px 14px;width:min(100%,1000px);max-height:100%;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}"+
+".xfoch{position:sticky;top:0;z-index:4;background:var(--bg);padding:10px 0;margin-bottom:6px;border-bottom:1px solid var(--line);align-items:center}.xfoch strong{flex:1;min-width:140px}"+
+":root body .xfoc svg.map.map,:root body .xfoc .mwrap.mwrap{max-width:min(100%,80vh)!important;margin-left:auto;margin-right:auto}";
 document.head.appendChild(css);
 
 /* ---------- classes no body ---------- */
 function isLand(x){return P()==="mobile"&&(x.orient==="land"||(x.orient==="auto"&&window.matchMedia&&matchMedia("(orientation:landscape)").matches&&innerHeight<560))}
 function applyCls(){var x=xGet(),c=document.body.classList,p=P();
  c.toggle("x-org",x.layout==="org");c.toggle("x-lat",x.layout==="lat");c.toggle("x-pefh",x.pef==="hide");c.toggle("x-stick",!!x.stick&&p==="pc");c.toggle("x-side",!!x.side&&p==="pc");c.toggle("x-flip",!!x.flip);c.toggle("x-pc",p==="pc");c.toggle("x-mob",p==="mobile");c.toggle("x-comp",x.dens==="compact");
- c.toggle("x-b1",x.btn===1);c.toggle("x-b2",x.btn===2);c.toggle("x-top",!!x.top||(p==="mobile"&&!!x.bot));c.toggle("x-bot",p==="mobile"&&!!x.bot);c.toggle("x-land",isLand(x))}
+ c.toggle("x-b1",x.btn===1);c.toggle("x-b2",x.btn===2);c.toggle("x-top",!!x.top||(p==="mobile"&&!!x.bot));c.toggle("x-bot",p==="mobile"&&!!x.bot);c.toggle("x-land",isLand(x));var rz=(+x.rz||100);document.documentElement.style.setProperty("--rz",rz/100);c.toggle("x-rz",rz!==100)}
 addEventListener("resize",function(){applyCls()});addEventListener("orientationchange",function(){setTimeout(applyCls,200)});
 
 /* ---------- menu ⋮ e Configurações ---------- */
@@ -93,6 +103,7 @@ function extraView(){var w=el("div"),x=xGet(),mob=P()==="mobile",nm=mob?"Celular
  var n=el("p",{class:"hint"});n.textContent="Vale só para "+nm+" e fica salvo no perfil aberto ("+cfgWho()+"). O padrão é o jeito Clássico de sempre; nada muda até você ligar.";w.appendChild(n);
  w.appendChild(seg("Layout","layout",[["classic","Clássico"],["org","Organizado"],["lat","Lateral ←→"]],mob?"Organizado: cartões em coluna única. Lateral: o conteúdo corre para a direita e a esquerda em vez de subir e descer.":"Organizado: abas agrupadas na lateral esquerda. Lateral: o conteúdo corre para a direita e a esquerda em vez de subir e descer."));
  w.appendChild(seg("Densidade","dens",[["comfy","Confortável"],["compact","Compacta"]]));
+ w.appendChild(seg("Tamanho do radar","rz",[[70,"Pequeno"],[100,"Normal"],[130,"Grande"],[150,"Maior"]],"Também dá para mudar com − e + no canto de cada radar."));
  w.appendChild(seg("Tamanho dos botões","btn",[[0,"Atual"],[1,"Médio"],[2,"Grande"]]));
  w.appendChild(seg("Barra fixa no topo (Modo, Publicar, salvamento)","top",ON,mob?"No celular ela já vai para o topo quando as abas ficam embaixo.":""));
  w.appendChild(seg("Recolher e expandir blocos","fold",ON,"Cada bloco ganha um botão para diminuir ou aumentar, e no topo aparecem Recolher tudo e Expandir tudo."));
@@ -187,6 +198,16 @@ function tabs(){var x=xGet(),sc=$("#secs"),p=P();if(!sc)return;var inv={};Object
  var tb=$("#tabs");tb.classList.remove("xmapsel");$$("select",tb).forEach(function(s){s.remove()});
  if(p==="mobile"&&(x.bot||x.layout==="org")&&$$(".tab:not(.add)",tb).length){var s=el("select",{class:"sel","aria-label":"Mapa"});S.maps.forEach(function(m,i){var o=el("option",{value:i});o.textContent=m.name||"Mapa";if(i===cur)o.selected=true;s.appendChild(o)});s.onchange=function(){cur=+s.value;render()};tb.classList.add("xmapsel");tb.insertBefore(s,tb.firstChild)}}
 
+/* ---------- tamanho do radar: − e + ---------- */
+var RZS=[60,70,85,100,115,130,150];
+function rzNear(v){var b=0;RZS.forEach(function(s,i){if(Math.abs(s-v)<Math.abs(RZS[b]-v))b=i});return b}
+function szSync(){var i=rzNear(+xGet().rz||100);$$(".xzb").forEach(function(g){g.querySelector("span").textContent=RZS[i]+"%";g.children[0].disabled=i===0;g.children[2].disabled=i===RZS.length-1})}
+function rzStep(k){var i=Math.max(0,Math.min(RZS.length-1,rzNear(+xGet().rz||100)+k));xSet("rz",RZS[i]);szSync()}
+function szButtons(){$$("#map svg.map").forEach(function(s){var pa=s.parentElement;if(!pa||pa.querySelector(".xzb"))return;if(getComputedStyle(pa).position==="static")pa.style.position="relative";
+ var g=el("div",{class:"xzb",role:"group","aria-label":"Tamanho do radar"}),a=btn("−","xzbb",function(){rzStep(-1)}),b=btn("+","xzbb",function(){rzStep(1)}),l=el("span");
+ a.title="Diminuir o radar";a.setAttribute("aria-label","Diminuir o radar");b.title="Aumentar o radar";b.setAttribute("aria-label","Aumentar o radar");g.appendChild(a);g.appendChild(l);g.appendChild(b);pa.appendChild(g)});szSync()}
+window.xRadarBtns=function(){fsButtons();szButtons()};
+
 /* ---------- atalhos ---------- */
 function findBtn(re){return $$("#map button").filter(function(b){return re.test((b.textContent||"").trim()+" "+(b.title||"")+" "+(b.getAttribute("aria-label")||""))})[0]}
 document.addEventListener("keydown",function(e){
@@ -203,7 +224,7 @@ render=function(){var kp=false,y=0,sx=0,mh=null,mp=document.getElementById("map"
  try{kp=!!xGet().keep&&!FS&&LK===[sec,cur,side].join("|");if(kp){y=window.scrollY||0;if(mp){sx=mp.scrollLeft;mh=mp.offsetHeight;mp.style.minHeight=mh+"px"}}}catch(e){}
  _r();
  try{var mp2=document.getElementById("map");if(kp){window.scrollTo(0,y);if(mp2){mp2.scrollLeft=sx}}if(mp2)mp2.style.minHeight="";if(kp){requestAnimationFrame(function(){if(Math.abs((window.scrollY||0)-y)>2)window.scrollTo(0,y)})}LK=[sec,cur,side].join("|")}catch(e){}
- try{applyCls();tabs();fold();fsButtons();d2enh();cmpEnh();extras2();latH();topChips();remember();setTimeout(helpQ,120);
+ try{applyCls();tabs();fold();fsButtons();szButtons();d2enh();cmpEnh();extras2();latH();topChips();remember();setTimeout(helpQ,120);
  if(FS&&!document.body.contains(FS.host)){var o=FS;o.ui.forEach(function(n){n.remove()});FS=null;document.body.classList.remove("xfs-on");var s=$("#map svg.map");if(s)enterFS(hostOf(s))}
  if(PN)fill()}catch(err){console.error("recursos.js:",err)}};
 /* ---------- C4 no radar (mostrar/esconder) ---------- */
